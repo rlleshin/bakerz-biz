@@ -1,15 +1,13 @@
-﻿using System;
+﻿using baker_biz;
+using System;
+using System.Collections.Generic;
 
 namespace Interview_Refactor1
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            // want to maximize the number of apple pies we can make.
-            // it takes 3 apples, 2 lbs of sugar and 1 pound of flour to make 1 apple pie
-            // this is intended to run on .NET Core
-
             do
             {
                 Console.WriteLine("How many apples do you have?");
@@ -21,39 +19,66 @@ namespace Interview_Refactor1
                 Console.WriteLine("How many pounds of flour do you have?");
                 var _PoundsOfflour = Console.ReadLine();
 
-                Console.WriteLine("You can make:");
-                utility.Calc(apples, sugar, _PoundsOfflour);
+                IngredientStock stock;
 
-                Console.WriteLine("\n\nEnter to calculate, 'q' to quit!");
+                try
+                {
+                    stock = getStock(apples, sugar, _PoundsOfflour);
+                }
+                catch
+                {
+                    Console.WriteLine("Invalid input given, please try again.");
+                    continue;
+                }
+
+                var applePieRecipe = new List<Ingredient>() {
+                    new Ingredient(IngredientType.Apple, new Amount(3, Units.Whole)),
+                    new Ingredient(IngredientType.Sugar, new Amount(2, Units.Pound)),
+                    new Ingredient(IngredientType.Flour, new Amount(1, Units.Pound))
+                };
+
+                int piesMade = stock.CreateRecipe(applePieRecipe);
+
+                displayResults(piesMade, stock);
+
             } while (!string.Equals(Console.ReadLine(), "Q"));
-
         }
-    }
 
-    public static class utility
-    {
-        public static void Calc(string a, string b, string c)
+        private static IngredientStock getStock(string? apples, string? sugar, string? flour)
         {
             try
             {
-                var maxApples = (int.Parse(a) / 3);
-                var x = int.Parse(b) / 2;
-                var _flourLeft =  int.Parse(c);
-                var maxPies = Math.Min(Math.Min(maxApples, x), _flourLeft);
-               
-                Console.WriteLine(maxPies + " apple pies!");
+                var numApples = int.Parse(apples);
+                var numPoundsSugar = decimal.Parse(sugar);
+                var numPoundsFlour = decimal.Parse(flour);
 
-                var leftOverA = int.Parse(a) - (maxPies * 3);
-                var leftOverB = int.Parse(b) - (maxPies * 2);
-                var leftOverC = int.Parse(c) - maxPies;
+                var initialStock = new Dictionary<IngredientType, Amount>()
+                {
+                    { IngredientType.Apple, new Amount(numApples, Units.Whole) },
+                    { IngredientType.Sugar, new Amount(numPoundsSugar, Units.Pound) },
+                    { IngredientType.Flour, new Amount(numPoundsFlour, Units.Pound) }
+                };
 
-                Console.WriteLine(leftOverA + " apple(s) left over, " + leftOverB + " lbs sugar left over, " + leftOverC + " lbs flour left over.");
+                return new IngredientStock(initialStock);
             }
-            catch (Exception)
+            catch
             {
-                Console.WriteLine("error");
+                throw new Exception("Invalid Amount Values Given");
             }
-
         }
-    }
+
+        private static void displayResults(int numRecipeItemsCreated, IngredientStock leftoverStock)
+        {
+            Console.WriteLine($"You can make: {numRecipeItemsCreated}.");
+            Console.WriteLine($"Leftover Ingredients: ");
+
+            foreach (Ingredient ingredient in leftoverStock.CheckStock())
+            {
+                Console.WriteLine($"{ingredient.Amount.Number} {ingredient.Amount.Unit}(s) of {ingredient.Type}(s)");
+            }
+        }
+    }  
 }
+
+
+
